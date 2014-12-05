@@ -140,10 +140,11 @@ type routeRegexp struct {
 // Match matches the regexp against the URL host or path.
 func (r *routeRegexp) Match(req *http.Request, match *RouteMatch) bool {
 	if !r.matchHost {
+		uri := strings.Split(req.RequestURI, "?")[0]
 		if r.matchQuery {
 			return r.regexp.MatchString(req.URL.RawQuery)
 		} else {
-			return r.regexp.MatchString(req.URL.Path)
+			return r.regexp.MatchString(uri)
 		}
 	}
 	return r.regexp.MatchString(getHost(req))
@@ -228,14 +229,15 @@ func (v *routeRegexpGroup) setMatch(req *http.Request, m *RouteMatch, r *Route) 
 	}
 	// Store path variables.
 	if v.path != nil {
-		pathVars := v.path.regexp.FindStringSubmatch(req.URL.Path)
+		uri := strings.Split(req.RequestURI, "?")[0]
+		pathVars := v.path.regexp.FindStringSubmatch(uri)
 		if pathVars != nil {
 			for k, v := range v.path.varsN {
 				m.Vars[v] = pathVars[k+1]
 			}
 			// Check if we should redirect.
 			if v.path.strictSlash {
-				p1 := strings.HasSuffix(req.URL.Path, "/")
+				p1 := strings.HasSuffix(uri, "/")
 				p2 := strings.HasSuffix(v.path.template, "/")
 				if p1 != p2 {
 					u, _ := url.Parse(req.URL.String())
